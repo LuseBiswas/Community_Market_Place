@@ -1,5 +1,5 @@
 import React, { Component, useEffect, useState } from 'react'
-import { StyleSheet, Text, TextInput, View, Button, TouchableOpacity, Image, ToastAndroid } from 'react-native'
+import { StyleSheet, Text, TextInput, View, Button, TouchableOpacity, Image, ToastAndroid, Alert, ActivityIndicator } from 'react-native'
 import { Formik } from 'formik';
 import {Picker} from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker';
@@ -17,6 +17,8 @@ export default function AddPostScreen() {
   const storage = getStorage();
   //To get the user Email address
   const {user} = useUser();
+  //To mkae loading state
+  const [loading, setLoading] = useState(false);
   const [categoryList, setCategoryList] = useState([]);
 
   useEffect(() => {
@@ -59,6 +61,8 @@ export default function AddPostScreen() {
 
   //This method is for On Image Submit 
   const onSubmitMethod = async( value )=>{
+
+    setLoading(true);
     
     //Convert URI to Blob file
     const res = await fetch(image);
@@ -79,7 +83,8 @@ export default function AddPostScreen() {
 
         const docRef = await addDoc(collection(db,"UserPost"),value);
         if(docRef.id){
-          console.log("Document Added")
+          setLoading(false);
+          Alert.alert('Success!!!','Post Added Successfully')
         }
       })
     });
@@ -180,8 +185,16 @@ export default function AddPostScreen() {
               onChangeText={handleChange('mobile')}
             />      
 
-            <TouchableOpacity onPress={handleSubmit} className='p-4 bg-[#007dfe] rounded-full mt-5' >
-              <Text className='text-white text-center text-[16px]'>Submit</Text>
+            <TouchableOpacity onPress={handleSubmit}
+            style={{
+              backgroundColor:loading?'#ccc':'#007BFF',
+            }}
+            disabled={loading} 
+            className='p-4 bg-[#007dfe] rounded-full mt-5' >
+              {loading?
+              <ActivityIndicator color={'#fff'}/>
+            : <Text className='text-white text-center text-[16px]'>Submit</Text> }
+              
             </TouchableOpacity>      
 
             
