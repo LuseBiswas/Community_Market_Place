@@ -1,13 +1,15 @@
 import React, { Component, useEffect, useState } from 'react'
-import { StyleSheet, Text, TextInput, View, Button, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, TextInput, View, Button, TouchableOpacity, Image } from 'react-native'
 import { Formik } from 'formik';
 import {Picker} from '@react-native-picker/picker'
+import * as ImagePicker from 'expo-image-picker';
 import { app } from '../../firebaseConfig';
 import { getFirestore, getDocs, collection } from "firebase/firestore";
 
 
 export default function AddPostScreen() {
 
+  const [image, setImage] = useState(null);
   //creating a method to get the category list from the firebase
   const db = getFirestore(app);
   const [categoryList, setCategoryList] = useState([]);
@@ -32,17 +34,52 @@ export default function AddPostScreen() {
   }
   //handleChange, handleSubmit need to memorize
 
+
+  //Used to pick image from gallery
+  const pickImage = async () => {
+    // No permissions request is necessary for launching the image library
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const onSubmitMethod = ( value )=>{
+    value.image = image;
+    console.log(value);
+
+  }
+
+
+
   return (
     <View className='p-10'>
-      <Text className='text-[27px] font-bold'>Add New Post</Text>
+      <Text className='text-[27px] font-bold mt-3'>Add New Post</Text>
       <Text className='text-[16px] text-gray-500 mb-10'>Create a Post and Start Selling</Text>
       <Formik
         initialValues={{ title: '', desc: '', category: '', address: '', mobile: '', price: '', image: '' }}
-        onSubmit={value => console.log(value)}
+        onSubmit={value => onSubmitMethod(value)}
       >
         {({ handleChange, handleBlur, handleSubmit, values, setFieldValue }) => (
           <View>
 
+            <TouchableOpacity onPress={pickImage}>
+
+              {image?
+              <Image source={{uri:image}} style={{width: 100, height: 100, borderRadius: 15}}/>
+              : <Image source={require('./../../assets/Images/placeholder.jpg')} 
+              style={{width: 100, height: 100, borderRadius: 15}}
+              />}
+            
+            </TouchableOpacity>
             <TextInput
               style={styles.input}
               placeholder='Title'
@@ -54,7 +91,7 @@ export default function AddPostScreen() {
               style={styles.input}
               placeholder='Description'
               value={values?.desc}
-              numberOfLines={5}
+              numberOfLines={3}
               onChangeText={handleChange('desc')}
             />
 
@@ -96,7 +133,7 @@ export default function AddPostScreen() {
               onChangeText={handleChange('mobile')}
             />      
 
-            <TouchableOpacity onPress={handleSubmit} className='p-4 bg-[#007dfe] rounded-full mt-10' >
+            <TouchableOpacity onPress={handleSubmit} className='p-4 bg-[#007dfe] rounded-full mt-5' >
               <Text className='text-white text-center text-[16px]'>Submit</Text>
             </TouchableOpacity>      
 
