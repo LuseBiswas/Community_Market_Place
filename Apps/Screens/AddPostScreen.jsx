@@ -1,9 +1,10 @@
 import React, { Component, useEffect, useState } from 'react'
-import { StyleSheet, Text, TextInput, View, Button, TouchableOpacity, Image } from 'react-native'
+import { StyleSheet, Text, TextInput, View, Button, TouchableOpacity, Image, ToastAndroid } from 'react-native'
 import { Formik } from 'formik';
 import {Picker} from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker';
 import { app } from '../../firebaseConfig';
+import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import { getFirestore, getDocs, collection } from "firebase/firestore";
 
 
@@ -12,6 +13,7 @@ export default function AddPostScreen() {
   const [image, setImage] = useState(null);
   //creating a method to get the category list from the firebase
   const db = getFirestore(app);
+  const storage = getStorage();
   const [categoryList, setCategoryList] = useState([]);
 
   useEffect(() => {
@@ -52,9 +54,23 @@ export default function AddPostScreen() {
     }
   };
 
-  const onSubmitMethod = ( value )=>{
+  //This method is for On Image Submit 
+  const onSubmitMethod = async( value )=>{
     value.image = image;
-    console.log(value);
+    //Convert URI to Blob file
+    const res = await fetch(image);
+    const blob = await res.blob();
+    const storageRef = ref(storage, 'communitytPost/'+Date.now()+".jpg");
+
+    uploadBytes(storageRef, blob).then((snapshot) => {
+      console.log('Uploaded a blob or file!');
+    }).then((res)=>{
+      getDownloadURL(storageRef).then(async(downloadURL)=>{
+        console.log(downloadURL);
+      })
+    });
+    
+
 
   }
 
@@ -67,8 +83,25 @@ export default function AddPostScreen() {
       <Formik
         initialValues={{ title: '', desc: '', category: '', address: '', mobile: '', price: '', image: '' }}
         onSubmit={value => onSubmitMethod(value)}
+
+        validate={(values)=>{
+          const errors = {}
+          if(!values.title)
+          {
+            console.log("Title is empty");
+            ToastAndroid.show('Title must be there',ToastAndroid.SHORT)
+            errors.name="Title must required"
+
+          }
+          
+          
+          return errors;
+
+        }}
+
+        
       >
-        {({ handleChange, handleBlur, handleSubmit, values, setFieldValue }) => (
+        {({ handleChange, handleBlur, handleSubmit, values, setFieldValue, errors }) => (
           <View>
 
             <TouchableOpacity onPress={pickImage}>
