@@ -4,8 +4,9 @@ import { Formik } from 'formik';
 import {Picker} from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker';
 import { app } from '../../firebaseConfig';
+import {useUser} from '@clerk/clerk-expo';
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import { getFirestore, getDocs, collection } from "firebase/firestore";
+import { getFirestore, getDocs, collection, addDoc } from "firebase/firestore";
 
 
 export default function AddPostScreen() {
@@ -14,6 +15,8 @@ export default function AddPostScreen() {
   //creating a method to get the category list from the firebase
   const db = getFirestore(app);
   const storage = getStorage();
+  //To get the user Email address
+  const {user} = useUser();
   const [categoryList, setCategoryList] = useState([]);
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function AddPostScreen() {
 
   //This method is for On Image Submit 
   const onSubmitMethod = async( value )=>{
-    value.image = image;
+    
     //Convert URI to Blob file
     const res = await fetch(image);
     const blob = await res.blob();
@@ -67,6 +70,17 @@ export default function AddPostScreen() {
     }).then((res)=>{
       getDownloadURL(storageRef).then(async(downloadURL)=>{
         console.log(downloadURL);
+        value.image=downloadURL;
+
+        //getting user detailf from useUser hook
+        value.userName = user.fullName;
+        value.userEmail = user.primaryEmailAddress.emailAddress;
+        value.userImage = user.imageUrl;
+
+        const docRef = await addDoc(collection(db,"UserPost"),value);
+        if(docRef.id){
+          console.log("Document Added")
+        }
       })
     });
     
@@ -81,7 +95,7 @@ export default function AddPostScreen() {
       <Text className='text-[27px] font-bold mt-3'>Add New Post</Text>
       <Text className='text-[16px] text-gray-500 mb-10'>Create a Post and Start Selling</Text>
       <Formik
-        initialValues={{ title: '', desc: '', category: '', address: '', mobile: '', price: '', image: '' }}
+        initialValues={{ title: '', desc: '', category: '', address: '', mobile: '', price: '', image: '', userName: '', userEmail: '', userImage:'' }}
         onSubmit={value => onSubmitMethod(value)}
 
         validate={(values)=>{
